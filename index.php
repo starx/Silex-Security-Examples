@@ -14,6 +14,7 @@ $app->register(new Silex\Provider\SessionServiceProvider());
 $app->register(new Silex\Provider\SecurityServiceProvider());
 $app->register(new \Silex\Provider\UrlGeneratorServiceProvider());
 
+
 $app['security.encoder.digest'] = function ($app) {
     return new Symfony\Component\Security\Core\Encoder\PlaintextPasswordEncoder();
 };
@@ -29,6 +30,11 @@ $app['security.firewalls'] = array(
         ),
     ),
 );
+
+$app['security.voters'] = $app->extend('security.voters', function($voters) use ($app) {
+    $voters[] = new \App\RouteVoter();
+    return $voters;
+});
 
 $app['security.access_rules'] = array(
     array('^/admin', 'ROLE_ADMIN'),
@@ -52,12 +58,18 @@ $app->get('/secured', function(\Symfony\Component\HttpFoundation\Request $reques
 
 
 $app->get('/user', function(\Symfony\Component\HttpFoundation\Request $request) use ($app) {
+    if (!$app['security.authorization_checker']->isGranted('USER')) {
+        throw new \Symfony\Component\Security\Core\Exception\AccessDeniedException();
+    }
     return $app['twig']->render('user.html.twig', [
         'last_username' => $app['session']->get('_security.last_username'),
     ]);
 });
 
 $app->get('/admin', function(\Symfony\Component\HttpFoundation\Request $request) use ($app) {
+    if (!$app['security.authorization_checker']->isGranted('ADMIN')) {
+        throw new \Symfony\Component\Security\Core\Exception\AccessDeniedException();
+    }
     return $app['twig']->render('admin.html.twig');
 });
 
