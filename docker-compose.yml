@@ -1,0 +1,18 @@
+version: "3.5"
+
+services:
+  composer:
+    image: composer:latest
+    working_dir: /usr/src/app
+    volumes:
+      - .:/usr/src/app
+    command: "install --ignore-platform-reqs"
+
+  app:
+#    image: php:5-apache
+    build: .
+    working_dir: /var/www
+    ports:
+      - 8081:80
+    volumes:
+      - .:/var/www
