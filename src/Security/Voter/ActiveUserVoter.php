@@ -37,6 +37,10 @@ class ActiveUserVoter implements VoterInterface
         if($customActive) {
             return VoterInterface::ACCESS_GRANTED; 
         }
+
+        $request = $object;
+        $request
+            ->attributes->set('_access_denied_reason', 'Customer active user voter denied.');
         return VoterInterface::ACCESS_DENIED;
     }
 

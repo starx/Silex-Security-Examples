@@ -1,10 +1,8 @@
 <?php
 
-
-use Starx\TaskList\Model\ItemStatus;
 use Symfony\Component\HttpFoundation\Request as Request;
+use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Security\Core\Encoder\MessageDigestPasswordEncoder;
-
 date_default_timezone_set('Europe/London');
 
 require dirname(__DIR__) . '/vendor/autoload.php';
@@ -30,7 +28,7 @@ $app->register(new Silex\Provider\SecurityServiceProvider(), [
             'logout' => array('logout_path' => '/admin/logout', 'invalidate_session' => true),
             'users' => function () use ($app) {
                 return new \Starx\SilexDocker\Security\Provider\UserProvider($app['users.db']);
-            }
+            },
         ],
     ],
     'security.role_hierarchy' => [
@@ -49,6 +47,15 @@ $app['security.voters'] = $app->extend('security.voters', function($voters) use 
 
 $app['security.access_manager'] = $app->share(function($app) {
     return new \Symfony\Component\Security\Core\Authorization\AccessDecisionManager($app['security.voters'], 'unanimous');
+});
+
+$app->error(function (\Exception $e, $code) use ($app) {
+    if($code === Response::HTTP_FORBIDDEN) {
+        $deniedReason = $app['request']->attributes->get('_access_denied_reason');
+
+        $msg = $deniedReason ?: $e->getMessage() ?: 'You do not have permission to access this resource.';
+        return $app->json(['error' => $msg], 403);
+    }
 });
 
 $app['users.db'] = $app->share(function() {
@@ -73,10 +80,6 @@ $app['users.db'] = $app->share(function() {
     ];
 });
 
-// $factory = $app['security.encoder_factory']; // Silex DI
-// $encoder = $factory->getEncoder(new \Symfony\Component\Security\Core\User\User('u', 'p', []));
-// var_dump(get_class($encoder));
-// exit;
 
 $app->get('/_whoami', function() use ($app) {
     $token = $app['security.token_storage']->getToken();
